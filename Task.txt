@@ -1,0 +1,10 @@
+We would like to investigate how certain questions break down among trans women, trans men, and non-binary
+participants. However, the survey sometimes uses outdated terminology and includes many gender-nonforming
+and questioning participants who are difficult to categorize this way, as well as erroneously and confusingly
+including “transgender” as a distinct gender category.
+Transform the data to include only 3 gender categories for trans men, trans women, and non-binary participants.
+Use the following definitions when transforming the dataset: (1) trans women are women who were assignedmale-
+at-birth; (2) trans men are men who were assigned-female-at-birth; (3) combine the “Genderqueer”
+and “Androgynous” categories to create a single “Non-binary” category. Filter the dataset to include only
+participants in these categories.
+And then perform exploratory data analysis.

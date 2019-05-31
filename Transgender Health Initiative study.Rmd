@@ -1,0 +1,143 @@
+---
+title: "HW4_Akshay_Chougule"
+author: "Akshay Chougule"
+date: "February 27, 2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readr)
+library(ggplot2)
+library(tidyverse)
+library(dplyr)
+```
+
+
+```{r}
+load("31721-0001-Data.rda")
+trans<- da31721.0001
+trans1<-select(trans,RESPKEY,Q5,Q6)%>% 
+  
+  filter(Q6 %in% c("(1) Man","(2) Woman",
+                   "(4) Androgynous",'(6) Gender Queer'))%>%
+  
+  spread(key = Q6, value = Q5)%>%
+  
+  select(RESPKEY,`(1) Man`,`(2) Woman`,
+         `(4) Androgynous`,`(6) Gender Queer`)%>%
+  
+  rename(Transwomen=`(1) Man`,Transmen = `(2) Woman`,
+         Non_Binary1= `(4) Androgynous`,
+            Non_Binary2 =`(6) Gender Queer`)%>%
+  
+  transmute(RESPKEY,Transwomen=
+              ifelse(Transwomen=="(2) Female","Transwomen",Transwomen),
+            Transmen=ifelse(Transmen=="(1) Male","Transmen",Transmen),
+            Non_Binary1=
+              ifelse(Non_Binary1%in% c("(1) Male", "(2) Female"),"Non Binary",Non_Binary1),
+            Non_Binary2=
+  ifelse(Non_Binary2%in% c("(1) Male", "(2) Female"),
+         "Non Binary",Non_Binary2))%>%
+  gather(key ="type",value="gender",
+         Transwomen,Transmen,Non_Binary1,Non_Binary2)%>%
+  filter(gender%in%c("Transwomen","Transmen","Non Binary"))
+  ggplot(trans1,aes(x=gender))+geom_bar()
+
+
+
+A<-trans%>%select(RESPKEY,Q88)%>%right_join(trans1,by="RESPKEY")
+B<-A%>%group_by(gender)%>%count()%>%rename(count=n)
+
+C<-A%>%filter(Q88=="(1) Yes")%>%group_by(gender)%>%count()%>%
+  rename(homeless_count=n)
+C%>%right_join(B,by="gender")%>%
+  mutate(Homeless.Proportion=homeless_count/count)%>%
+  ggplot()+geom_col(aes(x=gender,y=Homeless.Proportion))+
+  facet_grid(gender~.)
+```
+It is seen that as per the given definition majority of participents fall uner transmen gender type.In the second graph we calculated the proportion of homeless per each defined gender type. From the graph we can infer that gender type transwomen has the highest proportion of being homeless.Comapring 6.2% of the given report, this proportion is very high.
+
+
+
+```{r}
+setA<-trans%>% select(RESPKEY,Q88,D9_1,D9_2,D9_3,D9_4)%>%
+  transmute(RESPKEY,Q88,
+            D9_1 = ifelse(D9_1=="(1) Selected","yes",
+                                      NA),
+            D9_2= ifelse(D9_2=="(1) Selected","yes",NA),
+            D9_3= ifelse(D9_3=="(1) Selected","yes",NA),
+            D9_4=ifelse(D9_4=="(1) Selected","yes",
+                                   NA))%>%
+  rename(African.American=D9_1,
+         Caucasian=D9_2,Hispanic=D9_3,Native.American=D9_4)%>%
+gather(key = "Race",value = "Race.mentioned",African.American,
+       Caucasian,Hispanic,Native.American)%>%
+  filter(Race.mentioned=="yes")
+
+setB<-setA%>%group_by(Race)%>%count()%>%rename(Total.people=n)
+  
+  
+setA%>%filter(Q88=="(1) Yes")%>%group_by(Race)%>%count()%>%
+  rename(Homeless.people=n)%>%
+  right_join(setB,by="Race")%>%
+  mutate(ProportionOfHomeless=Homeless.people/Total.people)%>%
+  ggplot()+geom_col(aes(x=Race,y=ProportionOfHomeless))
+```
+Inference: From the graph,we can see that hispanic race has the highest homeless proportion . It is followed by native american , african american and caucasian. On an average 25% proportion of the population of these races is homeless.compared to the 6.2% of the total US population, it is higher.we can say that most of the population of the homeless belongs to hispanic.
+
+
+```{r}
+setx<-trans%>%select(RESPKEY,Q6,Q133)%>%
+  rename(Gender=Q6,Suicides=Q133)%>%
+  na.exclude()
+
+sety<-setx%>%
+  na.exclude()%>%
+  
+  
+  filter(Suicides=="(1) Yes")%>%
+  group_by(Gender)%>%
+  count()%>%
+  rename(Suicide.Attempts=n)
+
+sety
+
+
+setz<-setx%>%group_by(Gender)%>%na.exclude()%>%
+  count()%>%rename(Gender.count=n)
+setz
+
+proportion<-sum(sety$Suicide.Attempts)/sum(setz$Gender.count)
+proportion
+
+setz%>%left_join(sety,by="Gender")%>%
+  mutate(suicide.proportion=Suicide.Attempts/Gender.count)%>%
+  ggplot()+geom_col(aes(x=Gender,y=suicide.proportion))+coord_flip()
+```
+Inference: From the respondants around 41% has attempted suicide in their lifetime which is nearly the same to that of 40% which was reported by US 2015 report.It is higher to that of report.
+
+```{r}
+
+
+setJ<-trans%>%select(RESPKEY,Q119,Q133)%>%
+  rename(family.support=Q119,thought.killing=Q133)%>%
+  na.exclude()
+setK <-setJ%>%group_by(family.support)%>%count()%>%
+  filter(family.support!="(5) Not applicable to me")%>%
+  rename(Count.of.family.support.type=n)
+
+setJ%>% filter(thought.killing=="(1) Yes")%>%
+  group_by(family.support)%>%count()%>%
+  filter(family.support!="(5) Not applicable to me")%>%
+  rename(count.of.killing.thought=n)%>%
+  left_join(setK,by="family.support")%>%
+  mutate(proportionOfKillingThought=
+           count.of.killing.thought/Count.of.family.support.type)%>%
+  ggplot()+geom_col(aes(x=family.support,
+                        y=proportionOfKillingThought))+coord_flip()
+    
+
+```
+
+Inference: From the graph it can be infered that proportion of most of the category are quite high nearly to 0.5.Proportion of suicide  for gender queer and women is higher compared to man. Even though family plays important role in reducing sucidal proportion in each gender category. Still by looking at graph of part B we can say that even having family support the suicidal proportion for that category is higher.
